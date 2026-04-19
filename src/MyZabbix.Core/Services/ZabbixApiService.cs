@@ -166,7 +166,8 @@ public class ZabbixApiService
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<JsonRpcResponse<T>>();
-        return result?.Result;
+        if (result is null) return default;
+        return result.Result;
     }
 
     // ── DTO ───────────────────────────────────────────────────────────────
@@ -182,7 +183,7 @@ public class ZabbixApiService
 
     private class JsonRpcResponse<T>
     {
-        [JsonPropertyName("result")] public T? Result { get; set; }
+        [JsonPropertyName("result")] public T Result { get; set; } = default!;
         [JsonPropertyName("error")]  public JsonRpcError? Error { get; set; }
     }
 
