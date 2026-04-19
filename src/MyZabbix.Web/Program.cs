@@ -26,7 +26,7 @@ builder.Services.AddRazorComponents()
 // Shared UI services
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<AlertService>();
-builder.Services.AddSingleton<ThemeService>();
+builder.Services.AddSingleton<ThemeService>(_ => new ThemeService(builder.Configuration));
 builder.Services.AddBlazoredModal();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddBlazoredSessionStorage();
