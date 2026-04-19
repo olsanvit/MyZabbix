@@ -1,0 +1,95 @@
+@page "/settings"
+@inject ILocalStorageService LocalStorage
+@inject IConfiguration Config
+@inject NavigationManager Nav
+
+<PageTitle>Settings — MyZabbix</PageTitle>
+
+<h4 class="mb-4"><i class="bi bi-gear me-2 text-danger"></i>Zabbix Connection</h4>
+
+<div class="card" style="max-width: 520px;">
+    <div class="card-body">
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Zabbix Server URL</label>
+            <input class="form-control" placeholder="http://your-zabbix-server" @bind="_url" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Username</label>
+            <input class="form-control" placeholder="Admin" @bind="_username" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Password</label>
+            <input class="form-control" type="password" @bind="_password" />
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-danger" @onclick="ConnectAsync" disabled="@_connecting">
+                @if (_connecting)
+                { <span class="spinner-border spinner-border-sm me-1"></span> }
+                <i class="bi bi-plug me-1"></i> Connect
+            </button>
+            @if (Zabbix.IsAuthenticated)
+            {
+                <button class="btn btn-outline-secondary" @onclick="DisconnectAsync">
+                    <i class="bi bi-plug-fill me-1"></i> Disconnect
+                </button>
+                <span class="badge bg-success ms-2">
+                    <i class="bi bi-check-circle me-1"></i>Connected to @Zabbix.ServerUrl
+                </span>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _url = "";
+    private string _username = "";
+    private string _password = "";
+    private bool _connecting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _url      = await LocalStorage.GetItemAsStringAsync("zabbix_url")      ?? Config["Zabbix:Url"]      ?? "";
+        _username = await LocalStorage.GetItemAsStringAsync("zabbix_username") ?? Config["Zabbix:Username"] ?? "Admin";
+        _password = Config["Zabbix:Password"] ?? "";
+    }
+
+    private async Task ConnectAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_url) || string.IsNullOrWhiteSpace(_username))
+        {
+            Alerts.Warning("Please fill in URL and username.");
+            return;
+        }
+
+        _connecting = true;
+        try
+        {
+            var ok = await Zabbix.LoginAsync(_url, _username, _password);
+            if (ok)
+            {
+                await LocalStorage.SetItemAsStringAsync("zabbix_url",      _url);
+                await LocalStorage.SetItemAsStringAsync("zabbix_username", _username);
+                Toasts.Success("Connected", $"Successfully connected to {_url}");
+                Nav.NavigateTo("/");
+            }
+            else
+            {
+                Alerts.Error("Connection failed", "Invalid credentials or server unreachable.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Alerts.Error("Connection error", ex.Message);
+        }
+        finally
+        {
+            _connecting = false;
+        }
+    }
+
+    private async Task DisconnectAsync()
+    {
+        await Zabbix.LogoutAsync();
+        Toasts.Info("Disconnected");
+    }
+}

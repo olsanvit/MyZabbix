@@ -1,0 +1,25 @@
+@inject SharedServices.Services.ThemeService ThemeService
+
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="@ThemeService.CurrentThemeUrl" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="_content/SharedServices/SharedServices.bundle.scp.css" />
+    <link rel="stylesheet" href="_content/Blazored.Modal/blazored-modal.css" />
+    <link rel="stylesheet" href="_content/Blazored.Typeahead/blazored-typeahead.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="MyZabbix.Web.styles.css" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <HeadOutlet />
+</head>
+<body>
+    <Routes @rendermode="InteractiveServer" />
+    <ReconnectModal />
+    <script src="_framework/blazor.web.js"></script>
+    <script src="_content/Blazor-ApexCharts/js/blazor-apexcharts.js"></script>
+</body>
+</html>

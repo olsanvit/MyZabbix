@@ -1,0 +1,41 @@
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+            <span class="fw-bold text-danger fs-5">Z</span>
+            <span>MyZabbix</span>
+        </a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="hosts">
+                <i class="bi bi-hdd-network me-2"></i> Hosts
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="problems">
+                <i class="bi bi-exclamation-triangle me-2"></i> Problems
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="triggers">
+                <i class="bi bi-lightning-charge me-2"></i> Triggers
+            </NavLink>
+        </div>
+        <hr class="text-white-50 my-2" />
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="settings">
+                <i class="bi bi-gear me-2"></i> Settings
+            </NavLink>
+        </div>
+    </nav>
+</div>

@@ -1,0 +1,207 @@
+@page "/"
+@using System.Timers
+
+<PageTitle>Dashboard — MyZabbix</PageTitle>
+
+<h4 class="mb-4"><i class="bi bi-speedometer2 me-2 text-danger"></i>Dashboard</h4>
+
+@if (!Zabbix.IsAuthenticated)
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        Not connected to Zabbix. Go to <a href="/settings">Settings</a> and connect first.
+    </div>
+}
+else if (_loading)
+{
+    <div class="d-flex align-items-center gap-2 text-muted">
+        <div class="spinner-border spinner-border-sm"></div> Loading...
+    </div>
+}
+else if (_stats is not null)
+{
+    <!-- Summary cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-primary text-white">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold">@_stats.TotalHosts</div>
+                    <div class="small"><i class="bi bi-hdd-network me-1"></i>Total Hosts</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-success text-white">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold">@_stats.AvailableHosts</div>
+                    <div class="small"><i class="bi bi-check-circle me-1"></i>Available</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-danger text-white">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold">@_stats.UnavailableHosts</div>
+                    <div class="small"><i class="bi bi-x-circle me-1"></i>Unavailable</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-warning text-dark">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold">@_stats.TotalProblems</div>
+                    <div class="small"><i class="bi bi-exclamation-triangle me-1"></i>Active Problems</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Problems by severity -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-bar-chart me-2"></i>Problems by Severity</div>
+                <div class="card-body">
+                    <ApexChart TItem="SeverityItem" Options="_chartOptions" @ref="_chart">
+                        <ApexPointSeries TItem="SeverityItem"
+                                         Items="_severityData"
+                                         SeriesType="SeriesType.Bar"
+                                         XValue="@(e => e.Label)"
+                                         YValue="@(e => e.Count)"
+                                         Color="@(e => e.Color)" />
+                    </ApexChart>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-pie-chart me-2"></i>Host Availability</div>
+                <div class="card-body">
+                    <ApexChart TItem="AvailItem" Options="_pieOptions" @ref="_pieChart">
+                        <ApexPointSeries TItem="AvailItem"
+                                         Items="_availData"
+                                         SeriesType="SeriesType.Donut"
+                                         XValue="@(e => e.Label)"
+                                         YValue="@(e => e.Count)" />
+                    </ApexChart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent problems table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold"><i class="bi bi-list-ul me-2"></i>Recent Problems</span>
+            <span class="badge bg-danger">@_problems.Count</span>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>Severity</th>
+                        <th>Host</th>
+                        <th>Problem</th>
+                        <th>Time</th>
+                        <th>Age</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _problems.Take(20))
+                    {
+                        <tr>
+                            <td><span class="badge bg-@p.SeverityBadge">@p.SeverityLabel</span></td>
+                            <td><small>@p.HostName</small></td>
+                            <td><small>@p.Name</small></td>
+                            <td><small>@p.OccurredAt.ToString("HH:mm:ss")</small></td>
+                            <td><small class="text-muted">@(DateTime.Now - p.OccurredAt).Humanize()</small></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading;
+    private ZabbixDashboardStats? _stats;
+    private List<ZabbixProblem> _problems = [];
+    private ApexChart<SeverityItem>? _chart;
+    private ApexChart<AvailItem>? _pieChart;
+    private Timer? _refreshTimer;
+
+    private List<SeverityItem> _severityData = [];
+    private List<AvailItem> _availData = [];
+
+    private ApexChartOptions<SeverityItem> _chartOptions = new()
+    {
+        Chart = new Chart { Type = ChartType.Bar, Height = 220, Toolbar = new Toolbar { Show = false } },
+        PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = false, ColumnWidth = "50%" } },
+        DataLabels = new DataLabels { Enabled = true },
+        Xaxis = new XAxis { Type = XAxisType.Category }
+    };
+
+    private ApexChartOptions<AvailItem> _pieOptions = new()
+    {
+        Chart = new Chart { Type = ChartType.Donut, Height = 220 },
+        Colors = ["#198754", "#dc3545", "#6c757d"],
+        Legend = new Legend { Position = LegendPosition.Bottom }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Zabbix.IsAuthenticated)
+            await LoadAsync();
+
+        _refreshTimer = new Timer(30_000);
+        _refreshTimer.Elapsed += async (_, _) =>
+        {
+            if (Zabbix.IsAuthenticated)
+            {
+                await LoadAsync();
+                await InvokeAsync(StateHasChanged);
+            }
+        };
+        _refreshTimer.Start();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _stats    = await Zabbix.GetDashboardStatsAsync();
+            _problems = await Zabbix.GetProblemsAsync();
+
+            _severityData =
+            [
+                new("Disaster", _stats.DisasterCount, "#dc3545"),
+                new("High",     _stats.HighCount,     "#fd7e14"),
+                new("Average",  _stats.AverageCount,  "#ffc107"),
+                new("Warning",  _stats.WarningCount,  "#0dcaf0"),
+                new("Info",     _stats.InfoCount,     "#0d6efd"),
+            ];
+
+            _availData =
+            [
+                new("Available",   _stats.AvailableHosts),
+                new("Unavailable", _stats.UnavailableHosts),
+                new("Unknown",     _stats.TotalHosts - _stats.AvailableHosts - _stats.UnavailableHosts),
+            ];
+        }
+        catch (Exception ex)
+        {
+            Alerts.Error("Failed to load dashboard", ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    public void Dispose() => _refreshTimer?.Dispose();
+
+    private record SeverityItem(string Label, int Count, string Color);
+    private record AvailItem(string Label, int Count);
+}

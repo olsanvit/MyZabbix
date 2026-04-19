@@ -1,0 +1,91 @@
+@page "/problems"
+
+<PageTitle>Problems — MyZabbix</PageTitle>
+
+<h4 class="mb-4"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Active Problems</h4>
+
+@if (!Zabbix.IsAuthenticated)
+{
+    <div class="alert alert-warning">Not connected. Go to <a href="/settings">Settings</a>.</div>
+}
+else if (_loading)
+{
+    <div class="d-flex align-items-center gap-2 text-muted"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+}
+else
+{
+    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+        <input class="form-control form-control-sm" style="max-width:200px" placeholder="Filter..." @bind="_filter" @bind:event="oninput" />
+        <select class="form-select form-select-sm" style="max-width:160px" @bind="_minSeverity">
+            <option value="-1">All severities</option>
+            <option value="5">Disaster</option>
+            <option value="4">High+</option>
+            <option value="3">Average+</option>
+            <option value="2">Warning+</option>
+        </select>
+        <span class="text-muted small">@_filtered.Count problems</span>
+        <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Severity</th>
+                    <th>Host</th>
+                    <th>Problem</th>
+                    <th>Since</th>
+                    <th>Age</th>
+                    <th>Ack</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in _filtered)
+                {
+                    <tr class="@(p.Severity == "5" ? "table-danger" : p.Severity == "4" ? "table-warning" : "")">
+                        <td><span class="badge bg-@p.SeverityBadge">@p.SeverityLabel</span></td>
+                        <td><small>@p.HostName</small></td>
+                        <td><small>@p.Name</small></td>
+                        <td><small>@p.OccurredAt.ToString("dd.MM HH:mm")</small></td>
+                        <td><small class="text-muted">@(DateTime.Now - p.OccurredAt).Humanize()</small></td>
+                        <td>
+                            @if (p.IsAcknowledged)
+                            { <i class="bi bi-check-circle text-success"></i> }
+                            else
+                            { <i class="bi bi-circle text-muted"></i> }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private bool _loading;
+    private List<ZabbixProblem> _all = [];
+    private string _filter = "";
+    private int _minSeverity = -1;
+
+    private List<ZabbixProblem> _filtered => _all
+        .Where(p => _minSeverity < 0 || int.TryParse(p.Severity, out var s) && s >= _minSeverity)
+        .Where(p => string.IsNullOrWhiteSpace(_filter)
+                 || p.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+                 || p.HostName.Contains(_filter, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Zabbix.IsAuthenticated) await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try { _all = await Zabbix.GetProblemsAsync(); }
+        catch (Exception ex) { Alerts.Error("Failed to load problems", ex.Message); }
+        finally { _loading = false; }
+    }
+}

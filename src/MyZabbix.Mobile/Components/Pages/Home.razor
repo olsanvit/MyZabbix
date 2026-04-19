@@ -1,0 +1,64 @@
+@page "/"
+
+<PageTitle>Dashboard</PageTitle>
+
+@if (!Zabbix.IsAuthenticated)
+{
+    <div class="alert alert-warning small">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Not connected. <a href="/settings">Connect</a>
+    </div>
+}
+else if (_loading)
+{
+    <div class="d-flex align-items-center gap-2 text-muted small">
+        <div class="spinner-border spinner-border-sm"></div> Loading...
+    </div>
+}
+else if (_stats is not null)
+{
+    <div class="row g-2 mb-3">
+        <div class="col-6"><div class="card border-0 bg-primary text-white p-2 text-center">
+            <div class="fw-bold fs-4">@_stats.TotalHosts</div><small>Hosts</small>
+        </div></div>
+        <div class="col-6"><div class="card border-0 bg-danger text-white p-2 text-center">
+            <div class="fw-bold fs-4">@_stats.TotalProblems</div><small>Problems</small>
+        </div></div>
+        <div class="col-6"><div class="card border-0 bg-success text-white p-2 text-center">
+            <div class="fw-bold fs-4">@_stats.AvailableHosts</div><small>Available</small>
+        </div></div>
+        <div class="col-6"><div class="card border-0 bg-warning text-dark p-2 text-center">
+            <div class="fw-bold fs-4">@_stats.UnavailableHosts</div><small>Down</small>
+        </div></div>
+    </div>
+
+    @foreach (var p in _problems.Take(10))
+    {
+        <div class="d-flex align-items-start gap-2 border-bottom py-1">
+            <span class="badge bg-@p.SeverityBadge mt-1" style="min-width:70px">@p.SeverityLabel</span>
+            <div>
+                <div class="small fw-semibold">@p.Name</div>
+                <div class="text-muted" style="font-size:.75rem">@p.HostName · @(DateTime.Now - p.OccurredAt).Humanize()</div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private bool _loading;
+    private ZabbixDashboardStats? _stats;
+    private List<ZabbixProblem> _problems = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Zabbix.IsAuthenticated) return;
+        _loading = true;
+        try
+        {
+            _stats    = await Zabbix.GetDashboardStatsAsync();
+            _problems = await Zabbix.GetProblemsAsync();
+        }
+        catch (Exception ex) { Alerts.Error("Error", ex.Message); }
+        finally { _loading = false; }
+    }
+}

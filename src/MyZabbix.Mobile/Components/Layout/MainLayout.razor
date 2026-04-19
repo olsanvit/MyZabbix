@@ -1,0 +1,39 @@
+@inherits LayoutComponentBase
+
+<div class="container-fluid px-2 py-3">
+    <div class="d-flex align-items-center mb-3 gap-2">
+        <span class="fw-bold text-danger fs-5">Z</span>
+        <span class="fw-semibold">MyZabbix</span>
+        @if (Zabbix.IsAuthenticated)
+        {
+            <span class="badge bg-success ms-auto"><i class="bi bi-wifi"></i></span>
+        }
+        else
+        {
+            <a href="/settings" class="badge bg-danger ms-auto text-white text-decoration-none">
+                <i class="bi bi-plug"></i> Connect
+            </a>
+        }
+    </div>
+
+    <nav class="d-flex gap-2 mb-3 flex-wrap">
+        <NavLink class="btn btn-sm btn-outline-secondary" href="" Match="NavLinkMatch.All">
+            <i class="bi bi-speedometer2"></i>
+        </NavLink>
+        <NavLink class="btn btn-sm btn-outline-secondary" href="hosts">
+            <i class="bi bi-hdd-network"></i>
+        </NavLink>
+        <NavLink class="btn btn-sm btn-outline-secondary" href="problems">
+            <i class="bi bi-exclamation-triangle"></i>
+        </NavLink>
+        <NavLink class="btn btn-sm btn-outline-secondary" href="settings">
+            <i class="bi bi-gear"></i>
+        </NavLink>
+    </nav>
+
+    <main>@Body</main>
+</div>
+
+<Toast />
+<BlazoredModal />
+<GlobalAlert />

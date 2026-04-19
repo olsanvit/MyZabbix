@@ -1,0 +1,37 @@
+@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <div class="d-flex align-items-center gap-3">
+                @if (Zabbix.IsAuthenticated)
+                {
+                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Connected</span>
+                    <small class="text-muted">@Zabbix.ServerUrl</small>
+                }
+                else
+                {
+                    <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Not connected</span>
+                }
+            </div>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<Toast />
+<BlazoredModal />
+<GlobalAlert />
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

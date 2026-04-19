@@ -1,0 +1,4 @@
+html, body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+.status-bar-safe-area { env(safe-area-inset-top); }
+#blazor-error-ui { display: none; background: lightyellow; padding: 0.6rem; position: fixed; bottom: 0; width: 100%; z-index: 1000; }
+.toast-closing { opacity: 0; transition: opacity 0.25s ease-out; }

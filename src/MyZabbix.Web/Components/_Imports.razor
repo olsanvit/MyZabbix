@@ -1,0 +1,28 @@
+@namespace MyZabbix.Web.Components
+@using System.Net.Http
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
+@using MyZabbix.Web.Components
+@using MyZabbix.Web.Components.Layout
+@using MyZabbix.Core.Models
+@using MyZabbix.Core.Services
+@using SharedServices
+@using SharedServices.Services
+@using SharedServices.Components.UI
+@using Blazored.Modal
+@using Blazored.Modal.Services
+@using Blazored.LocalStorage
+@using Blazored.SessionStorage
+@using Blazored.Typeahead
+@using ApexCharts
+@using FluentValidation
+@using Humanizer
+
+@inject ToastService Toasts
+@inject AlertService Alerts
+@inject ZabbixApiService Zabbix

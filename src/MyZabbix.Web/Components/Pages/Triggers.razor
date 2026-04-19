@@ -1,0 +1,72 @@
+@page "/triggers"
+
+<PageTitle>Triggers — MyZabbix</PageTitle>
+
+<h4 class="mb-4"><i class="bi bi-lightning-charge me-2 text-danger"></i>Active Triggers</h4>
+
+@if (!Zabbix.IsAuthenticated)
+{
+    <div class="alert alert-warning">Not connected. Go to <a href="/settings">Settings</a>.</div>
+}
+else if (_loading)
+{
+    <div class="d-flex align-items-center gap-2 text-muted"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+}
+else
+{
+    <div class="d-flex gap-2 mb-3 align-items-center">
+        <input class="form-control form-control-sm w-auto" placeholder="Filter..." @bind="_filter" @bind:event="oninput" />
+        <span class="text-muted small">@_filtered.Count triggers in PROBLEM state</span>
+        <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>Host</th>
+                    <th>Trigger</th>
+                    <th>Last Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in _filtered)
+                {
+                    <tr>
+                        <td><span class="badge bg-danger">P@(t.Priority)</span></td>
+                        <td><small>@t.HostName</small></td>
+                        <td><small>@t.Description</small></td>
+                        <td><small class="text-muted">@t.LastChangedAt.ToString("dd.MM HH:mm")</small></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private bool _loading;
+    private List<ZabbixTrigger> _triggers = [];
+    private string _filter = "";
+
+    private List<ZabbixTrigger> _filtered => string.IsNullOrWhiteSpace(_filter)
+        ? _triggers
+        : _triggers.Where(t => t.Description.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+                             || t.HostName.Contains(_filter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Zabbix.IsAuthenticated) await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try { _triggers = await Zabbix.GetTriggersAsync(); }
+        catch (Exception ex) { Alerts.Error("Failed to load triggers", ex.Message); }
+        finally { _loading = false; }
+    }
+}
