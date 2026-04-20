@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../MyZabbix.Core/MyZabbix.Core.csproj" />
+  <Project Path="../SharedServices/SharedServices/SharedServices.csproj" />
+  <Project Path="MyZabbix.Web.csproj" />
+</Solution>

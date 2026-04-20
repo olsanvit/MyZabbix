@@ -1,0 +1,5 @@
+{
+    "dotnet.defaultSolution": "${workspaceFolder}/MyZabbix.sln",
+    "omnisharp.defaultLaunchSolution": "${workspaceFolder}/MyZabbix.sln",
+    "omnisharp.useModernNet": true
+}
