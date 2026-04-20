@@ -5,6 +5,8 @@ using Blazored.SessionStorage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MyZabbix.Core.Services;
+using Microsoft.Extensions.Caching.Memory;
+using MyZabbix.Mobile.Services;
 using SharedServices;
 using SharedServices.Services;
 
@@ -50,6 +52,17 @@ public static class MauiProgram
         // Zabbix API
         builder.Services.AddHttpClient<ZabbixApiService>();
         builder.Services.AddScoped<ZabbixApiService>();
+
+        // Nové sdílené služby
+        builder.Services.AddScoped<LoadingService>();
+        builder.Services.AddScoped<ConfirmService>();
+        builder.Services.AddScoped<UserPreferencesService>();
+        builder.Services.AddScoped<ClipboardService>();
+        builder.Services.AddTransient<Debouncer>();
+        builder.Services.AddSingleton<ConnectionStateService>();
+        builder.Services.AddMemoryCache();
+        builder.Services.AddSingleton<ConnectivityService>();
+        builder.Services.AddSingleton<SecureStorageService>();
 
         return builder.Build();
     }
