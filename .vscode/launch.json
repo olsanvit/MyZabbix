@@ -2,10 +2,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "MyZabbix.Web",
-            "type": "dotnet",
+            "name": "Launch MyZabbix.Web",
+            "type": "coreclr",
             "request": "launch",
-            "projectPath": "${workspaceFolder}/src/MyZabbix.Web/MyZabbix.Web.csproj"
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/MyZabbix.Web/bin/Debug/net10.0/MyZabbix.Web.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/MyZabbix.Web",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "console": "integratedTerminal"
         }
     ]
 }
