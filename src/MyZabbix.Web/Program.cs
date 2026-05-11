@@ -5,7 +5,9 @@ using Blazored.SessionStorage;
 using MyZabbix.Core.Services;
 using MyZabbix.Web.Components;
 using Serilog;
+using Serilog.Events;
 using Serilog.Exceptions;
+using Serilog.Sinks.PostgreSQL.ColumnWriters;
 using SharedServices;
 using SharedServices.Services;
 
@@ -29,6 +31,20 @@ Log.Logger = new LoggerConfiguration()
         retainedFileCountLimit: 30,
         shared: true,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}")
+    .WriteTo.PostgreSQL(
+        connectionString: builder.Configuration.GetConnectionString("DefaultConnection") ?? "",
+        tableName: "Logs",
+        columnOptions: new Dictionary<string, ColumnWriterBase>
+        {
+            { "message",    new RenderedMessageColumnWriter() },
+            { "level",      new LevelColumnWriter() },
+            { "raise_date", new TimestampColumnWriter() },
+            { "exception",  new ExceptionColumnWriter() },
+            { "properties", new PropertiesColumnWriter() },
+            { "machine_name", new SinglePropertyColumnWriter("MachineName") }
+        },
+        needAutoCreateTable: true,
+        restrictedToMinimumLevel: LogEventLevel.Warning)
     .CreateLogger();
 builder.Host.UseSerilog();
 
