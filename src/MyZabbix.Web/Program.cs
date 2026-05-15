@@ -60,9 +60,8 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddApexCharts();
 
-// Zabbix API
+// Zabbix API — AddHttpClient<T> registruje typed HttpClient i samotný ZabbixApiService jako jednu registraci
 builder.Services.AddHttpClient<ZabbixApiService>();
-builder.Services.AddScoped<ZabbixApiService>();
 
 AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
     Log.Fatal(e.ExceptionObject as Exception, "UNHANDLED AppDomain exception");
