@@ -60,8 +60,11 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddApexCharts();
 
-// Zabbix API — AddHttpClient<T> registruje typed HttpClient i samotný ZabbixApiService jako jednu registraci
-builder.Services.AddHttpClient<ZabbixApiService>();
+// Zabbix API — pojmenovaný HttpClient + Scoped service (stav = auth token přežívá v rámci Blazor circuit)
+builder.Services.AddHttpClient("Zabbix");
+builder.Services.AddScoped(sp => new ZabbixApiService(
+    sp.GetRequiredService<IHttpClientFactory>().CreateClient("Zabbix"),
+    sp.GetRequiredService<ILogger<ZabbixApiService>>()));
 
 AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
     Log.Fatal(e.ExceptionObject as Exception, "UNHANDLED AppDomain exception");
@@ -73,6 +76,10 @@ TaskScheduler.UnobservedTaskException += (sender, e) =>
 };
 
 var app = builder.Build();
+
+var zabbixUrl = builder.Configuration["Zabbix:Url"] ?? "";
+if (string.IsNullOrWhiteSpace(zabbixUrl) || zabbixUrl.Contains("your-zabbix-server"))
+    Log.Warning("Zabbix:Url is not configured — configure via Settings page or appsettings");
 
 var pathBase = builder.Configuration["PathBase"];
 if (!string.IsNullOrWhiteSpace(pathBase))

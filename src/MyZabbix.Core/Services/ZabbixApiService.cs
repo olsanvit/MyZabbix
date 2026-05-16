@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using MyZabbix.Core.Models;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -7,21 +8,26 @@ namespace MyZabbix.Core.Services;
 
 /// <summary>
 /// Klient pro Zabbix JSON-RPC 2.0 API.
-/// Registrovat jako Scoped: builder.Services.AddScoped&lt;ZabbixApiService&gt;()
-/// + builder.Services.AddHttpClient&lt;ZabbixApiService&gt;()
+/// Registrovat jako Scoped + pojmenovaný HttpClient:
+///   builder.Services.AddHttpClient("Zabbix");
+///   builder.Services.AddScoped(sp => new ZabbixApiService(
+///       sp.GetRequiredService&lt;IHttpClientFactory&gt;().CreateClient("Zabbix"),
+///       sp.GetRequiredService&lt;ILogger&lt;ZabbixApiService&gt;&gt;()));
 /// </summary>
 public class ZabbixApiService
 {
     private readonly HttpClient _http;
+    private readonly ILogger<ZabbixApiService> _log;
     private string? _authToken;
     private int _requestId = 1;
 
     public bool IsAuthenticated => _authToken is not null;
     public string? ServerUrl { get; private set; }
 
-    public ZabbixApiService(HttpClient http)
+    public ZabbixApiService(HttpClient http, ILogger<ZabbixApiService> log)
     {
         _http = http;
+        _log  = log;
     }
 
     // ── Auth ──────────────────────────────────────────────────────────────
@@ -30,6 +36,7 @@ public class ZabbixApiService
     {
         ServerUrl = url.TrimEnd('/');
         _authToken = null;
+        _log.LogInformation("ZabbixApiService: Přihlašování na {Url} jako {User}", ServerUrl, user);
 
         var response = await SendAsync<string>("user.login", new
         {
@@ -40,14 +47,18 @@ public class ZabbixApiService
         if (response is not null)
         {
             _authToken = response;
+            _log.LogInformation("ZabbixApiService: Přihlášení úspěšné na {Url}", ServerUrl);
             return true;
         }
+
+        _log.LogWarning("ZabbixApiService: Přihlášení selhalo na {Url} (prázdný token)", ServerUrl);
         return false;
     }
 
     public async Task LogoutAsync()
     {
         if (!IsAuthenticated) return;
+        _log.LogInformation("ZabbixApiService: Odhlašování ze {Url}", ServerUrl);
         await SendAsync<bool>("user.logout", new { });
         _authToken = null;
     }
@@ -149,7 +160,10 @@ public class ZabbixApiService
     private async Task<T?> SendAsync<T>(string method, object @params, bool requireAuth = true)
     {
         if (requireAuth && !IsAuthenticated)
+        {
+            _log.LogWarning("ZabbixApiService: Volání {Method} bez autentizace zamítnuto", method);
             throw new InvalidOperationException("Not authenticated. Call LoginAsync first.");
+        }
 
         var payload = new JsonRpcRequest
         {
@@ -159,14 +173,36 @@ public class ZabbixApiService
             Id     = _requestId++
         };
 
-        var response = await _http.PostAsJsonAsync(
-            $"{ServerUrl}/api_jsonrpc.php", payload,
-            new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
-
-        response.EnsureSuccessStatusCode();
+        HttpResponseMessage response;
+        try
+        {
+            response = await _http.PostAsJsonAsync(
+                $"{ServerUrl}/api_jsonrpc.php", payload,
+                new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException ex)
+        {
+            _log.LogError(ex, "ZabbixApiService: HTTP chyba při {Method} na {Url} (status={Status})",
+                method, ServerUrl, ex.StatusCode);
+            throw;
+        }
 
         var result = await response.Content.ReadFromJsonAsync<JsonRpcResponse<T>>();
-        if (result is null) return default;
+        if (result is null)
+        {
+            _log.LogWarning("ZabbixApiService: Null odpověď při {Method}", method);
+            return default;
+        }
+
+        if (result.Error is not null)
+        {
+            _log.LogError("ZabbixApiService: JSON-RPC error při {Method} — code={Code} message={Message} data={Data}",
+                method, result.Error.Code, result.Error.Message, result.Error.Data);
+            throw new InvalidOperationException(
+                $"Zabbix API error [{result.Error.Code}]: {result.Error.Message} — {result.Error.Data}");
+        }
+
         return result.Result;
     }
 
