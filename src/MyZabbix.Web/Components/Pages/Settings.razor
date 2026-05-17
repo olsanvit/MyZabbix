@@ -51,6 +51,14 @@
         _url      = await LocalStorage.GetItemAsStringAsync("zabbix_url")      ?? Config["Zabbix:Url"]      ?? "";
         _username = await LocalStorage.GetItemAsStringAsync("zabbix_username") ?? Config["Zabbix:Username"] ?? "Admin";
         _password = Config["Zabbix:Password"] ?? "";
+
+        if (!string.IsNullOrWhiteSpace(_url) &&
+            !string.IsNullOrWhiteSpace(_username) &&
+            !string.IsNullOrWhiteSpace(_password) &&
+            !Zabbix.IsAuthenticated)
+        {
+            await ConnectAsync();
+        }
     }
 
     private async Task ConnectAsync()

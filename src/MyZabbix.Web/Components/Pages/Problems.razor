@@ -1,4 +1,5 @@
 @page "/problems"
+@implements IDisposable
 
 <PageTitle>Problems — MyZabbix</PageTitle>
 
@@ -27,6 +28,7 @@ else
         <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
             <i class="bi bi-arrow-clockwise"></i> Refresh
         </button>
+        <span class="text-muted small ms-auto">auto-refresh 60s</span>
     </div>
 
     <div class="table-responsive">
@@ -68,6 +70,7 @@ else
     private List<ZabbixProblem> _all = [];
     private string _filter = "";
     private int _minSeverity = -1;
+    private System.Threading.Timer? _refreshTimer;
 
     private List<ZabbixProblem> _filtered => _all
         .Where(p => _minSeverity < 0 || int.TryParse(p.Severity, out var s) && s >= _minSeverity)
@@ -81,11 +84,32 @@ else
         if (Zabbix.IsAuthenticated) await LoadAsync();
     }
 
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _refreshTimer = new System.Threading.Timer(async _ =>
+            {
+                if (Zabbix.IsAuthenticated)
+                {
+                    await LoadAsync();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+        }
+        return Task.CompletedTask;
+    }
+
     private async Task LoadAsync()
     {
         _loading = true;
         try { _all = await Zabbix.GetProblemsAsync(); }
         catch (Exception ex) { Alerts.Error("Failed to load problems", ex.Message); }
         finally { _loading = false; }
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
     }
 }
