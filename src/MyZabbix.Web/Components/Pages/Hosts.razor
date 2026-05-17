@@ -30,6 +30,7 @@ else
                     <th>Host</th>
                     <th>Display Name</th>
                     <th>Enabled</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -48,6 +49,11 @@ else
                             { <i class="bi bi-check-circle text-success"></i> }
                             else
                             { <i class="bi bi-x-circle text-danger"></i> }
+                        </td>
+                        <td>
+                            <a href="/hosts/@h.HostId" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Detail
+                            </a>
                         </td>
                     </tr>
                 }

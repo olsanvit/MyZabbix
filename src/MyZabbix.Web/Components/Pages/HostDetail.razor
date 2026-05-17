@@ -1,0 +1,150 @@
+@page "/hosts/{HostId}"
+@rendermode InteractiveServer
+
+<PageTitle>@_hostName — MyZabbix</PageTitle>
+
+@if (!Zabbix.IsAuthenticated)
+{
+    <div class="alert alert-warning">Not connected. Go to <a href="/settings">Settings</a>.</div>
+}
+else if (_loading)
+{
+    <div class="d-flex align-items-center gap-2 text-muted my-4">
+        <div class="spinner-border spinner-border-sm"></div> Loading…
+    </div>
+}
+else
+{
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="/hosts" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <h4 class="m-0">
+            <i class="bi bi-hdd-network me-2 text-@_statusBadge"></i>@_hostName
+        </h4>
+        <span class="badge bg-@_statusBadge">@_statusLabel</span>
+        <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+    </div>
+
+    <!-- Active Triggers -->
+    <h6 class="text-danger mb-2"><i class="bi bi-lightning-charge me-1"></i>Active Triggers (@_triggers.Count)</h6>
+    @if (!_triggers.Any())
+    {
+        <div class="alert alert-success py-2 mb-4">No active triggers — host looks healthy.</div>
+    }
+    else
+    {
+        <div class="table-responsive mb-4">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr><th>Priority</th><th>Trigger</th><th>Last Change</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in _triggers)
+                    {
+                        <tr>
+                            <td><span class="badge bg-danger">P@(t.Priority)</span></td>
+                            <td><small>@t.Description</small></td>
+                            <td><small class="text-muted">@t.LastChangedAt.ToString("dd.MM.yyyy HH:mm")</small></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <!-- Items / Metrics -->
+    <h6 class="mb-2"><i class="bi bi-graph-up me-1"></i>Monitored Items (@_items.Count)</h6>
+    @if (!_items.Any())
+    {
+        <p class="text-muted small">No items found for this host.</p>
+    }
+    else
+    {
+        <div class="row g-2 mb-3">
+            <div class="col-md-4">
+                <input class="form-control form-control-sm" placeholder="Filter items…"
+                       @bind="_itemFilter" @bind:event="oninput" />
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr><th>Name</th><th>Key</th><th>Last Value</th><th>Updated</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in FilteredItems)
+                    {
+                        <tr>
+                            <td><small class="fw-semibold">@item.Name</small></td>
+                            <td><code class="small text-muted">@item.Key</code></td>
+                            <td><small>@item.DisplayValue</small></td>
+                            <td><small class="text-muted">@item.LastUpdatedAt.ToString("dd.MM HH:mm")</small></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public string HostId { get; set; } = "";
+
+    private bool _loading = true;
+    private string _hostName = "";
+    private string _statusBadge = "secondary";
+    private string _statusLabel = "";
+    private List<ZabbixTrigger> _triggers = [];
+    private List<ZabbixItem> _items = [];
+    private string _itemFilter = "";
+
+    private IEnumerable<ZabbixItem> FilteredItems => string.IsNullOrWhiteSpace(_itemFilter)
+        ? _items
+        : _items.Where(i => i.Name.Contains(_itemFilter, StringComparison.OrdinalIgnoreCase)
+                          || i.Key.Contains(_itemFilter, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Zabbix.IsAuthenticated) await LoadAsync();
+        else _loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            // Load host info from the hosts list (no single-host API call needed)
+            var hosts = await Zabbix.GetHostsAsync();
+            var host = hosts.FirstOrDefault(h => h.HostId == HostId);
+            if (host is not null)
+            {
+                _hostName    = host.Name;
+                _statusBadge = host.StatusBadge;
+                _statusLabel = host.StatusLabel;
+            }
+            else
+            {
+                _hostName = HostId;
+            }
+
+            var triggersTask = Zabbix.GetTriggersAsync(HostId);
+            var itemsTask    = Zabbix.GetItemsAsync(HostId);
+            await Task.WhenAll(triggersTask, itemsTask);
+
+            _triggers = triggersTask.Result;
+            _items    = itemsTask.Result;
+        }
+        catch (Exception ex)
+        {
+            Alerts.Error("Failed to load host detail", ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}
