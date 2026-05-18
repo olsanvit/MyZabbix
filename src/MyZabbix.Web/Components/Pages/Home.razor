@@ -1,5 +1,6 @@
 @page "/"
-@using System.Timers
+@rendermode InteractiveServer
+@implements IDisposable
 
 <PageTitle>Dashboard — MyZabbix</PageTitle>
 
@@ -18,151 +19,176 @@ else if (_loading)
         <div class="spinner-border spinner-border-sm"></div> Loading...
     </div>
 }
-else if (_stats is not null)
+else
 {
-    <!-- Summary cards -->
+    <!-- Summary stat badges -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="card border-0 bg-primary text-white">
-                <div class="card-body">
-                    <div class="fs-2 fw-bold">@_stats.TotalHosts</div>
+        <div class="col-6 col-md-4">
+            <div class="card border-0 bg-primary text-white h-100">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
+                    <div class="fs-1 fw-bold">@_hosts.Count</div>
                     <div class="small"><i class="bi bi-hdd-network me-1"></i>Total Hosts</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 bg-success text-white">
-                <div class="card-body">
-                    <div class="fs-2 fw-bold">@_stats.AvailableHosts</div>
-                    <div class="small"><i class="bi bi-check-circle me-1"></i>Available</div>
+        <div class="col-6 col-md-4">
+            <div class="card border-0 bg-success text-white h-100">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
+                    <div class="fs-1 fw-bold">@_hosts.Count(h => h.IsEnabled)</div>
+                    <div class="small"><i class="bi bi-check-circle me-1"></i>Enabled Hosts</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 bg-danger text-white">
-                <div class="card-body">
-                    <div class="fs-2 fw-bold">@_stats.UnavailableHosts</div>
-                    <div class="small"><i class="bi bi-x-circle me-1"></i>Unavailable</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 bg-warning text-dark">
-                <div class="card-body">
-                    <div class="fs-2 fw-bold">@_stats.TotalProblems</div>
-                    <div class="small"><i class="bi bi-exclamation-triangle me-1"></i>Active Problems</div>
+        <div class="col-6 col-md-4">
+            <div class="card border-0 bg-danger text-white h-100">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
+                    <div class="fs-1 fw-bold">@_problems.Count</div>
+                    <div class="small"><i class="bi bi-exclamation-triangle me-1"></i>Total Problems</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Problems by severity -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header fw-semibold"><i class="bi bi-bar-chart me-2"></i>Problems by Severity</div>
-                <div class="card-body">
-                    <ApexChart TItem="SeverityItem" Options="_chartOptions" @ref="_chart">
-                        <ApexPointSeries TItem="SeverityItem"
-                                         Items="_severityData"
-                                         SeriesType="SeriesType.Bar"
-                                         XValue="@(e => e.Label)"
-                                         YValue="@(e => e.Count)" />
-                    </ApexChart>
+    <!-- Problems by severity cards -->
+    <h6 class="text-muted mb-2"><i class="bi bi-bar-chart me-1"></i>Problems by Severity</h6>
+    <div class="row g-2 mb-4">
+        @foreach (var sev in _severityGroups)
+        {
+            <div class="col-6 col-sm-4 col-md-2">
+                <div class="card border-0 text-white h-100" style="background-color:@sev.Color">
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center py-2">
+                        <div class="fs-3 fw-bold">@sev.Count</div>
+                        <div class="small fw-semibold">@sev.Label</div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header fw-semibold"><i class="bi bi-pie-chart me-2"></i>Host Availability</div>
-                <div class="card-body">
-                    <ApexChart TItem="AvailItem" Options="_pieOptions" @ref="_pieChart">
-                        <ApexPointSeries TItem="AvailItem"
-                                         Items="_availData"
-                                         SeriesType="SeriesType.Donut"
-                                         XValue="@(e => e.Label)"
-                                         YValue="@(e => e.Count)" />
-                    </ApexChart>
-                </div>
-            </div>
-        </div>
+        }
     </div>
 
-    <!-- Recent problems table -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-semibold"><i class="bi bi-list-ul me-2"></i>Recent Problems</span>
-            <span class="badge bg-danger">@_problems.Count</span>
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-hover table-sm mb-0">
-                <thead>
-                    <tr>
-                        <th>Severity</th>
-                        <th>Host</th>
-                        <th>Problem</th>
-                        <th>Time</th>
-                        <th>Age</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var p in _problems.Take(20))
+    <div class="row g-3">
+        <!-- Last 5 problems -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Recent Problems</span>
+                    <a href="/problems" class="btn btn-sm btn-outline-secondary">View all</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (_problems.Count == 0)
                     {
-                        <tr>
-                            <td><span class="badge bg-@p.SeverityBadge">@p.SeverityLabel</span></td>
-                            <td><small>@p.HostName</small></td>
-                            <td><small>@p.Name</small></td>
-                            <td><small>@p.OccurredAt.ToString("HH:mm:ss")</small></td>
-                            <td><small class="text-muted">@(DateTime.Now - p.OccurredAt).Humanize()</small></td>
-                        </tr>
+                        <p class="text-muted text-center py-3 mb-0">No active problems</p>
                     }
-                </tbody>
-            </table>
+                    else
+                    {
+                        <table class="table table-hover table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Severity</th>
+                                    <th>Problem</th>
+                                    <th>Age</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in _problems.Take(5))
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-@p.SeverityBadge">@p.SeverityLabel</span></td>
+                                        <td>
+                                            <small class="d-block fw-semibold">@p.Name</small>
+                                            <small class="text-muted">@p.HostName</small>
+                                        </td>
+                                        <td><small class="text-muted text-nowrap">@(DateTime.Now - p.OccurredAt).Humanize()</small></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Last 5 hosts with problems -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold"><i class="bi bi-hdd-network me-2 text-danger"></i>Hosts with Problems</span>
+                    <a href="/hosts" class="btn btn-sm btn-outline-secondary">View all</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (_hostsWithProblems.Count == 0)
+                    {
+                        <p class="text-muted text-center py-3 mb-0">No hosts with problems</p>
+                    }
+                    else
+                    {
+                        <table class="table table-hover table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Host</th>
+                                    <th>Problems</th>
+                                    <th>Worst</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var h in _hostsWithProblems.Take(5))
+                                {
+                                    <tr>
+                                        <td><small><code>@h.HostName</code></small></td>
+                                        <td><span class="badge bg-secondary">@h.Count</span></td>
+                                        <td><span class="badge bg-@h.WorstSeverityBadge">@h.WorstSeverityLabel</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 }
 
 @code {
     private bool _loading;
-    private ZabbixDashboardStats? _stats;
+    private List<ZabbixHost> _hosts = [];
     private List<ZabbixProblem> _problems = [];
-    private ApexChart<SeverityItem>? _chart;
-    private ApexChart<AvailItem>? _pieChart;
-    private Timer? _refreshTimer;
+    private System.Threading.Timer? _refreshTimer;
 
-    private List<SeverityItem> _severityData = [];
-    private List<AvailItem> _availData = [];
+    private record SeverityGroup(string Label, int Count, string Color);
+    private record HostProblemSummary(string HostName, int Count, string WorstSeverityLabel, string WorstSeverityBadge);
 
-    private ApexChartOptions<SeverityItem> _chartOptions = new()
-    {
-        Chart = new Chart { Type = ChartType.Bar, Height = 220, Toolbar = new Toolbar { Show = false } },
-        PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = false, ColumnWidth = "50%" } },
-        DataLabels = new DataLabels { Enabled = true },
-        Xaxis = new XAxis { Type = XAxisType.Category }
-    };
+    private List<SeverityGroup> _severityGroups = [];
+    private List<HostProblemSummary> _hostsWithProblems = [];
 
-    private ApexChartOptions<AvailItem> _pieOptions = new()
-    {
-        Chart = new Chart { Type = ChartType.Donut, Height = 220 },
-        Colors = ["#198754", "#dc3545", "#6c757d"],
-        Legend = new Legend { Position = LegendPosition.Bottom }
-    };
+    private static readonly (int Sev, string Label, string Color)[] SeverityMeta =
+    [
+        (5, "Disaster",       "#dc3545"),
+        (4, "High",           "#fd7e14"),
+        (3, "Average",        "#ffc107"),
+        (2, "Warning",        "#0dcaf0"),
+        (1, "Information",    "#0d6efd"),
+        (0, "Not Classified", "#6c757d"),
+    ];
 
     protected override async Task OnInitializedAsync()
     {
         if (Zabbix.IsAuthenticated)
             await LoadAsync();
+    }
 
-        _refreshTimer = new Timer(30_000);
-        _refreshTimer.Elapsed += async (_, _) =>
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
         {
-            if (Zabbix.IsAuthenticated)
+            _refreshTimer = new System.Threading.Timer(async _ =>
             {
-                await LoadAsync();
-                await InvokeAsync(StateHasChanged);
-            }
-        };
-        _refreshTimer.Start();
+                if (Zabbix.IsAuthenticated)
+                {
+                    await LoadAsync();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+        }
+        return Task.CompletedTask;
     }
 
     private async Task LoadAsync()
@@ -170,24 +196,33 @@ else if (_stats is not null)
         _loading = true;
         try
         {
-            _stats    = await Zabbix.GetDashboardStatsAsync();
-            _problems = await Zabbix.GetProblemsAsync();
+            var hostsTask    = Zabbix.GetHostsAsync();
+            var problemsTask = Zabbix.GetProblemsAsync();
+            await Task.WhenAll(hostsTask, problemsTask);
 
-            _severityData =
-            [
-                new("Disaster", _stats.DisasterCount, "#dc3545"),
-                new("High",     _stats.HighCount,     "#fd7e14"),
-                new("Average",  _stats.AverageCount,  "#ffc107"),
-                new("Warning",  _stats.WarningCount,  "#0dcaf0"),
-                new("Info",     _stats.InfoCount,     "#0d6efd"),
-            ];
+            _hosts    = hostsTask.Result;
+            _problems = problemsTask.Result;
 
-            _availData =
-            [
-                new("Available",   _stats.AvailableHosts),
-                new("Unavailable", _stats.UnavailableHosts),
-                new("Unknown",     _stats.TotalHosts - _stats.AvailableHosts - _stats.UnavailableHosts),
-            ];
+            // Build severity groups
+            _severityGroups = SeverityMeta
+                .Select(m => new SeverityGroup(
+                    m.Label,
+                    _problems.Count(p => int.TryParse(p.Severity, out var s) && s == m.Sev),
+                    m.Color))
+                .ToList();
+
+            // Build hosts-with-problems summary, sorted by problem count desc
+            _hostsWithProblems = _problems
+                .GroupBy(p => p.HostName)
+                .Where(g => !string.IsNullOrEmpty(g.Key))
+                .Select(g =>
+                {
+                    var worstSev = g.Max(p => int.TryParse(p.Severity, out var s) ? s : 0);
+                    var worst = g.First(p => int.TryParse(p.Severity, out var s) && s == worstSev);
+                    return new HostProblemSummary(g.Key, g.Count(), worst.SeverityLabel, worst.SeverityBadge);
+                })
+                .OrderByDescending(h => h.Count)
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -200,7 +235,4 @@ else if (_stats is not null)
     }
 
     public void Dispose() => _refreshTimer?.Dispose();
-
-    private record SeverityItem(string Label, int Count, string Color);
-    private record AvailItem(string Label, int Count);
 }
