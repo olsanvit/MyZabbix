@@ -100,7 +100,7 @@ else
     {
         _loading = true;
         try { _hosts = await Zabbix.GetHostsAsync(); }
-        catch (Exception ex) { Alerts.Error("Failed to load hosts", ex.Message); }
+        catch (Exception ex) { Alerts.Error("Failed to load hosts", ex.Message); Toasts.ShowError("Chyba", $"Nepodařilo se načíst hosty: {ex.Message}"); }
         finally { _loading = false; }
     }
 
