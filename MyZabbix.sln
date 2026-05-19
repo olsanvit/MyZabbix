@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyZabbix.Core", "src\MyZabb
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharedServices", "src\SharedServices\SharedServices\SharedServices.csproj", "{D8397AAD-D4E7-4772-BBAC-F1CA7CAF4A15}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyZabbix.Tests", "src\MyZabbix.Tests\MyZabbix.Tests.csproj", "{C7D8E9F0-A1B2-3456-CDEF-012345678901}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{D8397AAD-D4E7-4772-BBAC-F1CA7CAF4A15}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D8397AAD-D4E7-4772-BBAC-F1CA7CAF4A15}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D8397AAD-D4E7-4772-BBAC-F1CA7CAF4A15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7D8E9F0-A1B2-3456-CDEF-012345678901}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7D8E9F0-A1B2-3456-CDEF-012345678901}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7D8E9F0-A1B2-3456-CDEF-012345678901}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7D8E9F0-A1B2-3456-CDEF-012345678901}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
