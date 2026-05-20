@@ -21,7 +21,19 @@
         </div>
 
         <article class="content px-4">
-            @Body
+            <ErrorBoundary>
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent Context="ex">
+                    <div class="alert alert-danger m-3" role="alert">
+                        <h4 class="alert-heading">Nastala chyba</h4>
+                        <p>Při zpracování požadavku nastala neočekávaná chyba. Zkuste obnovit stránku.</p>
+                        <hr />
+                        <p class="mb-0 text-muted small">@ex.Message</p>
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
         </article>
     </main>
 </div>

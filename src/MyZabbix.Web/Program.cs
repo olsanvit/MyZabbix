@@ -75,6 +75,8 @@ TaskScheduler.UnobservedTaskException += (sender, e) =>
     e.SetObserved();
 };
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 var zabbixUrl = builder.Configuration["Zabbix:Url"] ?? "";
@@ -92,6 +94,7 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+app.MapHealthChecks("/health");
 app.MapStaticAssets();
 app.UseAntiforgery();
 
