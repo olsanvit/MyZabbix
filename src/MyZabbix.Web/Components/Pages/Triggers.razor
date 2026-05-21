@@ -15,8 +15,8 @@ else if (_loading)
 else
 {
     <div class="d-flex gap-2 mb-3 align-items-center">
-        <input class="form-control form-control-sm w-auto" placeholder="Filter..." @bind="_filter" @bind:event="oninput" />
-        <span class="text-muted small">@_filtered.Count triggers in PROBLEM state</span>
+        <input class="form-control form-control-sm w-auto" placeholder="Filter..." @bind="_filter" @bind:event="oninput" @oninput="OnFilterChanged" />
+        <span class="text-muted small">@_totalItems triggers in PROBLEM state</span>
         <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
             <i class="bi bi-arrow-clockwise"></i> Refresh
         </button>
@@ -33,7 +33,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var t in _filtered)
+                @foreach (var t in _pagedTriggers)
                 {
                     <tr>
                         <td><span class="badge bg-danger">P@(t.Priority)</span></td>
@@ -45,17 +45,28 @@ else
             </tbody>
         </table>
     </div>
+
+    <Paginator TotalItems="_totalItems" PageSize="PageSize" CurrentPage="_page"
+               OnPageChanged="p => { _page = p; StateHasChanged(); }" />
 }
 
 @code {
     private bool _loading;
     private List<ZabbixTrigger> _triggers = [];
     private string _filter = "";
+    private int _page = 1;
+    private const int PageSize = 20;
 
     private List<ZabbixTrigger> _filtered => string.IsNullOrWhiteSpace(_filter)
         ? _triggers
         : _triggers.Where(t => t.Description.Contains(_filter, StringComparison.OrdinalIgnoreCase)
                              || t.HostName.Contains(_filter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private int _totalItems => _filtered.Count;
+
+    private IEnumerable<ZabbixTrigger> _pagedTriggers => _filtered
+        .Skip((_page - 1) * PageSize)
+        .Take(PageSize);
 
     protected override async Task OnInitializedAsync()
     {
@@ -68,5 +79,11 @@ else
         try { _triggers = await Zabbix.GetTriggersAsync(); }
         catch (Exception ex) { Alerts.Error("Failed to load triggers", ex.Message); }
         finally { _loading = false; }
+    }
+
+    private void OnFilterChanged(ChangeEventArgs e)
+    {
+        _filter = e.Value?.ToString() ?? "";
+        _page = 1;
     }
 }

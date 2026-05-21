@@ -1,0 +1,64 @@
+@* Reusable pagination component.
+   Usage:
+     <Paginator TotalItems="_total" PageSize="20" CurrentPage="_page" OnPageChanged="p => { _page = p; LoadData(); }" />
+*@
+
+@if (TotalPages > 1)
+{
+    <nav aria-label="Stránkování">
+        <ul class="pagination pagination-sm justify-content-center flex-wrap mb-0">
+            <li class="page-item @(CurrentPage <= 1 ? "disabled" : "")">
+                <button class="page-link" @onclick="() => ChangePage(1)" disabled="@(CurrentPage <= 1)">&laquo;</button>
+            </li>
+            <li class="page-item @(CurrentPage <= 1 ? "disabled" : "")">
+                <button class="page-link" @onclick="() => ChangePage(CurrentPage - 1)" disabled="@(CurrentPage <= 1)">&lsaquo;</button>
+            </li>
+
+            @foreach (var p in PageNumbers)
+            {
+                <li class="page-item @(p == CurrentPage ? "active" : "")">
+                    <button class="page-link" @onclick="() => ChangePage(p)">@p</button>
+                </li>
+            }
+
+            <li class="page-item @(CurrentPage >= TotalPages ? "disabled" : "")">
+                <button class="page-link" @onclick="() => ChangePage(CurrentPage + 1)" disabled="@(CurrentPage >= TotalPages)">&rsaquo;</button>
+            </li>
+            <li class="page-item @(CurrentPage >= TotalPages ? "disabled" : "")">
+                <button class="page-link" @onclick="() => ChangePage(TotalPages)" disabled="@(CurrentPage >= TotalPages)">&raquo;</button>
+            </li>
+        </ul>
+    </nav>
+}
+
+@if (TotalItems > 0)
+{
+    <div class="text-center text-muted small mt-1">
+        @(((CurrentPage - 1) * PageSize) + 1)–@(Math.Min(CurrentPage * PageSize, TotalItems)) z @TotalItems
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public int TotalItems { get; set; }
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private int TotalPages => TotalItems <= 0 ? 1 : (int)Math.Ceiling((double)TotalItems / PageSize);
+
+    private IEnumerable<int> PageNumbers
+    {
+        get
+        {
+            int start = Math.Max(1, CurrentPage - 2);
+            int end   = Math.Min(TotalPages, CurrentPage + 2);
+            return Enumerable.Range(start, end - start + 1);
+        }
+    }
+
+    private async Task ChangePage(int page)
+    {
+        if (page < 1 || page > TotalPages || page == CurrentPage) return;
+        await OnPageChanged.InvokeAsync(page);
+    }
+}
