@@ -1,4 +1,5 @@
 @inject SharedServices.Services.ThemeService ThemeService
+@implements IDisposable
 
 <!DOCTYPE html>
 <html lang="cs" data-bs-theme="@ThemeService.BsThemeAttr">
@@ -23,3 +24,8 @@
     <script src="_content/Blazor-ApexCharts/js/blazor-apexcharts.js"></script>
 </body>
 </html>
+
+@code {
+    protected override void OnInitialized() => ThemeService.OnChange += StateHasChanged;
+    public void Dispose() => ThemeService.OnChange -= StateHasChanged;
+}
