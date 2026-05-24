@@ -65,6 +65,21 @@ else
         }
     </div>
 
+    <!-- Severity bar chart -->
+    @if (_severityGroups.Any(s => s.Count > 0))
+    {
+        <div class="mb-4">
+            <ApexChart TItem="SeverityGroup" Title="Problémy podle závažnosti"
+                       Options="_chartOptions">
+                <ApexPointSeries TItem="SeverityGroup" Name="Počet"
+                    Items="_severityGroups"
+                    XValue="@(e => e.Label)"
+                    YValue="@(e => (decimal?)e.Count)"
+                    SeriesType="SeriesType.Bar" />
+            </ApexChart>
+        </div>
+    }
+
     <div class="row g-3">
         <!-- Last 5 problems -->
         <div class="col-lg-6">
@@ -158,6 +173,15 @@ else
 
     private List<SeverityGroup> _severityGroups = [];
     private List<HostProblemSummary> _hostsWithProblems = [];
+
+    private readonly ApexChartOptions<SeverityGroup> _chartOptions = new()
+    {
+        PlotOptions = new PlotOptions
+        {
+            Bar = new PlotOptionsBar { Horizontal = false }
+        },
+        Chart = new Chart { Toolbar = new Toolbar { Show = false } }
+    };
 
     private static readonly (int Sev, string Label, string Color)[] SeverityMeta =
     [

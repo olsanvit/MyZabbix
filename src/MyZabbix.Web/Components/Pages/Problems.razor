@@ -1,5 +1,6 @@
 @page "/problems"
 @implements IDisposable
+@inject IJSRuntime JS
 
 <PageTitle>Problems — MyZabbix</PageTitle>
 
@@ -25,8 +26,11 @@ else
             <option value="2">Warning+</option>
         </select>
         <span class="text-muted small">@_filtered.Count problems</span>
-        <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
+        <button class="btn btn-sm btn-outline-secondary" @onclick="LoadAsync">
             <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+        <button class="btn btn-sm btn-outline-success" @onclick="ExportCsvAsync">
+            <i class="bi bi-download me-1"></i>Export CSV
         </button>
         <span class="text-muted small ms-auto">auto-refresh 60s</span>
     </div>
@@ -106,6 +110,17 @@ else
         try { _all = await Zabbix.GetProblemsAsync(); }
         catch (Exception ex) { Alerts.Error("Failed to load problems", ex.Message); }
         finally { _loading = false; }
+    }
+
+    private async Task ExportCsvAsync()
+    {
+        var data = _filtered;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Severity,Host,Problem,Since,Acknowledged");
+        foreach (var p in data)
+            sb.AppendLine($"\"{p.SeverityLabel}\",\"{p.HostName?.Replace("\"", "\"\"")}\",\"{p.Name?.Replace("\"", "\"\"")}\",{p.OccurredAt:yyyy-MM-dd HH:mm},{p.IsAcknowledged}");
+        var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+        await JS.InvokeVoidAsync("downloadBase64File", "problems.csv", "text/csv", Convert.ToBase64String(bytes));
     }
 
     public void Dispose()
