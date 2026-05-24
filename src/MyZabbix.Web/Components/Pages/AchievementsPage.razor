@@ -1,0 +1,14 @@
+@page "/achievements"
+@rendermode InteractiveServer
+@using SharedServices.Models.Achievement
+@using SharedServices.Components.UI
+@inject AchievementService Achievements
+
+<PageTitle>Achievementy</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="m-0"><i class="bi bi-trophy-fill me-2 text-warning"></i>Achievementy</h3>
+    <span class="badge bg-warning text-dark fs-6">@Achievements.TotalPoints bodů</span>
+</div>
+
+<AchievementsGrid Items="@Achievements.GetAllStatus()" />

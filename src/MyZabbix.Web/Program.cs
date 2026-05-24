@@ -10,6 +10,7 @@ using Serilog.Exceptions;
 using Serilog.Sinks.PostgreSQL.ColumnWriters;
 using SharedServices;
 using SharedServices.Services;
+using MyZabbix.Web.Achievements;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +54,13 @@ builder.Services.AddRazorComponents()
 
 // Shared UI services
 builder.Services.AddScoped<ToastService>();
+builder.Services.AddScoped<AchievementService>(sp =>
+    new AchievementService(
+        sp.GetRequiredService<ToastService>(),
+        sp.GetRequiredService<IWebHostEnvironment>())
+    {
+        Definitions = MyZabbixAchievements.All
+    });
 builder.Services.AddScoped<AlertService>();
 builder.Services.AddSingleton<ThemeService>(_ => new ThemeService(builder.Configuration));
 builder.Services.AddBlazoredModal();
