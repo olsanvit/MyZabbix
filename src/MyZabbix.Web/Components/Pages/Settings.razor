@@ -5,37 +5,76 @@
 
 <PageTitle>Settings — MyZabbix</PageTitle>
 
-<h4 class="mb-4"><i class="bi bi-gear me-2 text-danger"></i>Zabbix Connection</h4>
+<div class="ui-page-header ui-anim-fade-up">
+    <h3><i class="bi bi-gear"></i> Settings</h3>
+    @if (Zabbix.IsAuthenticated)
+    {
+        <span class="badge bg-success">
+            <i class="bi bi-check-circle me-1"></i>Connected
+        </span>
+    }
+</div>
 
-<div class="card" style="max-width: 520px;">
-    <div class="card-body">
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Zabbix Server URL</label>
-            <input class="form-control" placeholder="http://your-zabbix-server" @bind="_url" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Username</label>
-            <input class="form-control" placeholder="Admin" @bind="_username" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Password</label>
-            <input class="form-control" type="password" @bind="_password" />
-        </div>
-        <div class="d-flex gap-2 align-items-center">
-            <button class="btn btn-danger" @onclick="ConnectAsync" disabled="@_connecting">
-                @if (_connecting)
-                { <span class="spinner-border spinner-border-sm me-1"></span> }
-                <i class="bi bi-plug me-1"></i> Connect
-            </button>
-            @if (Zabbix.IsAuthenticated)
-            {
-                <button class="btn btn-outline-secondary" @onclick="DisconnectAsync">
-                    <i class="bi bi-plug-fill me-1"></i> Disconnect
-                </button>
-                <span class="badge bg-success ms-2">
-                    <i class="bi bi-check-circle me-1"></i>Connected to @Zabbix.ServerUrl
+<div class="row g-3 ui-anim-fade-up">
+    <div class="col-lg-5">
+        <div class="ui-panel">
+            <div class="ui-panel-header">
+                <span class="ui-panel-title">
+                    <i class="bi bi-plug text-accent"></i>
+                    Zabbix Connection
                 </span>
-            }
+            </div>
+            <div class="p-3">
+                <div class="d-flex flex-column gap-3">
+                    <div>
+                        <label class="form-label text-muted small mb-1">Zabbix Server URL</label>
+                        <input class="form-control form-control-sm"
+                               style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:var(--ui-text-1)"
+                               placeholder="http://your-zabbix-server"
+                               @bind="_url" />
+                    </div>
+                    <div>
+                        <label class="form-label text-muted small mb-1">Username</label>
+                        <input class="form-control form-control-sm"
+                               style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:var(--ui-text-1)"
+                               placeholder="Admin"
+                               @bind="_username" />
+                    </div>
+                    <div>
+                        <label class="form-label text-muted small mb-1">Password</label>
+                        <input class="form-control form-control-sm"
+                               style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:var(--ui-text-1)"
+                               type="password"
+                               @bind="_password" />
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center">
+                        <button class="btn btn-primary btn-sm" @onclick="ConnectAsync" disabled="@_connecting">
+                            @if (_connecting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            }
+                            <i class="bi bi-plug me-1"></i>Connect
+                        </button>
+                        @if (Zabbix.IsAuthenticated)
+                        {
+                            <button class="btn btn-outline-danger btn-sm" @onclick="DisconnectAsync">
+                                <i class="bi bi-plug-fill me-1"></i>Disconnect
+                            </button>
+                        }
+                    </div>
+
+                    @if (Zabbix.IsAuthenticated)
+                    {
+                        <div class="p-2 rounded" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3)">
+                            <div class="d-flex align-items-center gap-2 text-success small">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span>Connected to <strong>@Zabbix.ServerUrl</strong></span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 </div>

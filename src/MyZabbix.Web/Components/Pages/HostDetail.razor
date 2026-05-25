@@ -5,89 +5,124 @@
 
 @if (!Zabbix.IsAuthenticated)
 {
-    <div class="alert alert-warning">Not connected. Go to <a href="/settings">Settings</a>.</div>
+    <div class="alert alert-warning ui-anim-fade-up">
+        Not connected. Go to <a href="/settings">Settings</a>.
+    </div>
 }
 else if (_loading)
 {
-    <div class="d-flex align-items-center gap-2 text-muted my-4">
-        <div class="spinner-border spinner-border-sm"></div> Loading…
+    <div class="d-flex align-items-center gap-2 text-muted mt-4 ui-anim-fade-up">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span>Loading…</span>
     </div>
 }
 else
 {
-    <div class="d-flex align-items-center gap-3 mb-4">
-        <a href="/hosts" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back
-        </a>
-        <h4 class="m-0">
-            <i class="bi bi-hdd-network me-2 text-@_statusBadge"></i>@_hostName
-        </h4>
-        <span class="badge bg-@_statusBadge">@_statusLabel</span>
-        <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
-            <i class="bi bi-arrow-clockwise"></i> Refresh
+    <div class="ui-page-header ui-anim-fade-up">
+        <div class="d-flex align-items-center gap-3">
+            <a href="/hosts" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h3 class="m-0">
+                <i class="bi bi-hdd-network me-2 text-@_statusBadge"></i>@_hostName
+            </h3>
+            <span class="badge bg-@_statusBadge">@_statusLabel</span>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i>
         </button>
     </div>
 
     <!-- Active Triggers -->
-    <h6 class="text-danger mb-2"><i class="bi bi-lightning-charge me-1"></i>Active Triggers (@_triggers.Count)</h6>
-    @if (!_triggers.Any())
-    {
-        <div class="alert alert-success py-2 mb-4">No active triggers — host looks healthy.</div>
-    }
-    else
-    {
-        <div class="table-responsive mb-4">
-            <table class="table table-sm table-hover">
-                <thead class="table-light">
-                    <tr><th>Priority</th><th>Trigger</th><th>Last Change</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var t in _triggers)
-                    {
-                        <tr>
-                            <td><span class="badge bg-danger">P@(t.Priority)</span></td>
-                            <td><small>@t.Description</small></td>
-                            <td><small class="text-muted">@t.LastChangedAt.ToString("dd.MM.yyyy HH:mm")</small></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="ui-panel-header">
+            <span class="ui-panel-title">
+                <i class="bi bi-lightning-charge text-danger"></i>
+                Active Triggers
+            </span>
+            <span class="badge @(_triggers.Count == 0 ? "bg-success" : "bg-danger")">@_triggers.Count</span>
         </div>
-    }
-
-    <!-- Items / Metrics -->
-    <h6 class="mb-2"><i class="bi bi-graph-up me-1"></i>Monitored Items (@_items.Count)</h6>
-    @if (!_items.Any())
-    {
-        <p class="text-muted small">No items found for this host.</p>
-    }
-    else
-    {
-        <div class="row g-2 mb-3">
-            <div class="col-md-4">
-                <input class="form-control form-control-sm" placeholder="Filter items…"
-                       @bind="_itemFilter" @bind:event="oninput" />
+        @if (!_triggers.Any())
+        {
+            <div class="p-3">
+                <div class="d-flex align-items-center gap-2 text-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>No active triggers — host looks healthy.</span>
+                </div>
             </div>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-sm table-hover">
-                <thead class="table-light">
-                    <tr><th>Name</th><th>Key</th><th>Last Value</th><th>Updated</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in FilteredItems)
-                    {
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
                         <tr>
-                            <td><small class="fw-semibold">@item.Name</small></td>
-                            <td><code class="small text-muted">@item.Key</code></td>
-                            <td><small>@item.DisplayValue</small></td>
-                            <td><small class="text-muted">@item.LastUpdatedAt.ToString("dd.MM HH:mm")</small></td>
+                            <th>Priority</th>
+                            <th>Trigger</th>
+                            <th>Last Change</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in _triggers)
+                        {
+                            <tr>
+                                <td><span class="badge bg-danger">P@(t.Priority)</span></td>
+                                <td class="small">@t.Description</td>
+                                <td class="text-muted small">@t.LastChangedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- Monitored Items -->
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="ui-panel-header">
+            <span class="ui-panel-title">
+                <i class="bi bi-graph-up text-accent"></i>
+                Monitored Items
+            </span>
+            <span class="badge bg-secondary">@_items.Count</span>
         </div>
-    }
+        @if (!_items.Any())
+        {
+            <div class="p-3 text-muted small">No items found for this host.</div>
+        }
+        else
+        {
+            <div class="px-3 pt-3">
+                <UiSearchBar @bind-Value="_itemFilter"
+                             Placeholder="Filter items…"
+                             Count="@FilteredItems.Count()"
+                             CountLabel="items" />
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Key</th>
+                            <th>Last Value</th>
+                            <th>Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in FilteredItems)
+                        {
+                            <tr>
+                                <td class="small fw-semibold">@item.Name</td>
+                                <td><code class="small text-muted">@item.Key</code></td>
+                                <td class="small">@item.DisplayValue</td>
+                                <td class="text-muted small">@item.LastUpdatedAt.ToString("dd.MM HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -117,7 +152,6 @@ else
         _loading = true;
         try
         {
-            // Load host info from the hosts list (no single-host API call needed)
             var hosts = await Zabbix.GetHostsAsync();
             var host = hosts.FirstOrDefault(h => h.HostId == HostId);
             if (host is not null)
