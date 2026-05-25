@@ -16,7 +16,7 @@ else if (_loading)
 else
 {
     <div class="d-flex gap-2 mb-3 align-items-center">
-        <input class="form-control form-control-sm w-auto" placeholder="Filter hosts..." @bind="_filter" @bind:event="oninput" @oninput="OnFilterChanged" />
+        <input class="form-control form-control-sm w-auto" placeholder="Filter hosts..." @bind="_filter" @bind:event="oninput" />
         <span class="text-muted small">@_totalItems hosts</span>
         <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
             <i class="bi bi-arrow-clockwise"></i> Refresh

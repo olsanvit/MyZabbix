@@ -1,3 +1,5 @@
+using MudBlazor.Services;
+using Radzen;
 using ApexCharts;
 using Blazored.LocalStorage;
 using Blazored.Modal;
@@ -53,6 +55,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Shared UI services
+builder.Services.AddMudServices();
+builder.Services.AddRadzenComponents();
+builder.Services.AddScoped<UiLibraryService>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<AchievementService>(sp =>
     new AchievementService(
@@ -62,7 +67,7 @@ builder.Services.AddScoped<AchievementService>(sp =>
         Definitions = MyZabbixAchievements.All
     });
 builder.Services.AddScoped<AlertService>();
-builder.Services.AddSingleton<ThemeService>(_ => new ThemeService(builder.Configuration));
+builder.Services.AddSingleton<SharedServices.Services.ThemeService>(_ => new SharedServices.Services.ThemeService(builder.Configuration));
 builder.Services.AddBlazoredModal();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddBlazoredSessionStorage();

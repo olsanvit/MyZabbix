@@ -1,4 +1,8 @@
 @inherits LayoutComponentBase
+@inject UiLibraryService UiLib
+@implements IDisposable
+
+<UiProviders />
 
 <div class="page">
     <div class="sidebar">
@@ -50,3 +54,17 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UiLib.InitAsync();
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnInitialized() => UiLib.OnChanged += StateHasChanged;
+    public void Dispose() => UiLib.OnChanged -= StateHasChanged;
+}
