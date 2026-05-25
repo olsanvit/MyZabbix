@@ -1,9 +1,37 @@
 @page "/Error"
-@using Microsoft.AspNetCore.Diagnostics
+@using System.Diagnostics
 
-<PageTitle>Error</PageTitle>
+<PageTitle>Chyba</PageTitle>
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<div class="ui-panel ui-anim-fade-up text-center" style="max-width:580px;margin:60px auto;">
+    <div class="p-4">
+        <div style="font-size:2.5rem;margin-bottom:.5rem;">⚠️</div>
+        <h3 class="mb-1">Nastala chyba</h3>
+        <p class="text-muted small mb-3">Při zpracování požadavku došlo k neočekávané chybě.</p>
 
-<p>Return to <a href="/">Dashboard</a>.</p>
+        @if (ShowRequestId)
+        {
+            <div class="mb-3 p-2 rounded" style="background:rgba(255,255,255,0.05)">
+                <div class="text-muted small mb-1">Request ID</div>
+                <code class="text-warning">@RequestId</code>
+            </div>
+        }
+
+        <div class="text-muted small">
+            Pro více detailů zapněte <strong>Development</strong> prostředí nastavením
+            <code>ASPNETCORE_ENVIRONMENT=Development</code> a restartujte aplikaci.
+        </div>
+        <a class="btn btn-primary btn-sm mt-3" href="/">Zpět na hlavní stránku</a>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}
