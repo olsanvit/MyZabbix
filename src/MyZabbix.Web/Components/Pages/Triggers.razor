@@ -2,52 +2,77 @@
 
 <PageTitle>Triggers — MyZabbix</PageTitle>
 
-<h4 class="mb-4"><i class="bi bi-lightning-charge me-2 text-danger"></i>Active Triggers</h4>
+<div class="ui-page-header ui-anim-fade-up">
+    <h3><i class="bi bi-lightning-charge"></i> Active Triggers</h3>
+    <button class="btn btn-sm btn-outline-secondary" @onclick="LoadAsync">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+</div>
 
 @if (!Zabbix.IsAuthenticated)
 {
-    <div class="alert alert-warning">Not connected. Go to <a href="/settings">Settings</a>.</div>
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="d-flex align-items-center gap-3 py-2">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+            <div>
+                <div class="fw-semibold">Not connected to Zabbix</div>
+                <div class="text-muted small">Go to <a href="/settings">Settings</a> and enter your Zabbix credentials.</div>
+            </div>
+        </div>
+    </div>
 }
 else if (_loading)
 {
-    <div class="d-flex align-items-center gap-2 text-muted"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+    <div class="ui-anim-fade-up d-flex align-items-center gap-2 mt-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span class="text-muted">Loading triggers…</span>
+    </div>
 }
 else
 {
-    <div class="d-flex gap-2 mb-3 align-items-center">
-        <input class="form-control form-control-sm w-auto" placeholder="Filter..." @bind="_filter" @bind:event="oninput" />
-        <span class="text-muted small">@_totalItems triggers in PROBLEM state</span>
-        <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
-            <i class="bi bi-arrow-clockwise"></i> Refresh
-        </button>
-    </div>
+    <UiSearchBar @bind-Value="_filter" Placeholder="Filter triggers, hosts…"
+                 Count="_totalItems" CountLabel="triggers in PROBLEM state"
+                 OnSearch="ResetPage" />
 
-    <div class="table-responsive">
-        <table class="table table-hover table-sm">
-            <thead>
-                <tr>
-                    <th>Priority</th>
-                    <th>Host</th>
-                    <th>Trigger</th>
-                    <th>Last Change</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var t in _pagedTriggers)
-                {
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="ui-panel-header">
+            <span class="ui-panel-title">
+                <i class="bi bi-lightning-charge text-accent"></i>
+                Triggers in PROBLEM State
+            </span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
                     <tr>
-                        <td><span class="badge bg-danger">P@(t.Priority)</span></td>
-                        <td><small>@t.HostName</small></td>
-                        <td><small>@t.Description</small></td>
-                        <td><small class="text-muted">@t.LastChangedAt.ToString("dd.MM HH:mm")</small></td>
+                        <th>Priority</th>
+                        <th>Host</th>
+                        <th>Trigger</th>
+                        <th>Last Change</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @if (!_pagedTriggers.Any())
+                    {
+                        <tr><td colspan="4" class="text-muted text-center py-4">No active triggers.</td></tr>
+                    }
+                    @foreach (var t in _pagedTriggers)
+                    {
+                        <tr>
+                            <td><span class="badge bg-danger">P@(t.Priority)</span></td>
+                            <td><small class="text-muted">@t.HostName</small></td>
+                            <td><small>@t.Description</small></td>
+                            <td><small class="text-muted text-nowrap">@t.LastChangedAt.ToString("dd.MM HH:mm")</small></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="px-3 py-2 border-top border-opacity-10">
+            <Paginator TotalItems="_totalItems" PageSize="PageSize" CurrentPage="_page"
+                       OnPageChanged="p => { _page = p; StateHasChanged(); }" />
+        </div>
     </div>
-
-    <Paginator TotalItems="_totalItems" PageSize="PageSize" CurrentPage="_page"
-               OnPageChanged="p => { _page = p; StateHasChanged(); }" />
 }
 
 @code {
@@ -81,9 +106,5 @@ else
         finally { _loading = false; }
     }
 
-    private void OnFilterChanged(ChangeEventArgs e)
-    {
-        _filter = e.Value?.ToString() ?? "";
-        _page = 1;
-    }
+    private void ResetPage() => _page = 1;
 }

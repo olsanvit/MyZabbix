@@ -3,68 +3,95 @@
 
 <PageTitle>Hosts — MyZabbix</PageTitle>
 
-<h4 class="mb-4"><i class="bi bi-hdd-network me-2 text-danger"></i>Hosts</h4>
+<div class="ui-page-header ui-anim-fade-up">
+    <h3><i class="bi bi-hdd-network"></i> Hosts</h3>
+    <div class="d-flex gap-2 align-items-center">
+        <span class="text-muted small">auto-refresh 60s</span>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+    </div>
+</div>
 
 @if (!Zabbix.IsAuthenticated)
 {
-    <div class="alert alert-warning">Not connected. Go to <a href="/settings">Settings</a>.</div>
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="d-flex align-items-center gap-3 py-2">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+            <div>
+                <div class="fw-semibold">Not connected to Zabbix</div>
+                <div class="text-muted small">Go to <a href="/settings">Settings</a> and enter your Zabbix credentials.</div>
+            </div>
+        </div>
+    </div>
 }
 else if (_loading)
 {
-    <div class="d-flex align-items-center gap-2 text-muted"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+    <div class="ui-anim-fade-up d-flex align-items-center gap-2 mt-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span class="text-muted">Loading hosts…</span>
+    </div>
 }
 else
 {
-    <div class="d-flex gap-2 mb-3 align-items-center">
-        <input class="form-control form-control-sm w-auto" placeholder="Filter hosts..." @bind="_filter" @bind:event="oninput" />
-        <span class="text-muted small">@_totalItems hosts</span>
-        <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="LoadAsync">
-            <i class="bi bi-arrow-clockwise"></i> Refresh
-        </button>
-        <span class="text-muted small ms-auto">auto-refresh 60s</span>
-    </div>
+    <UiSearchBar @bind-Value="_filter" Placeholder="Filter hosts…"
+                 Count="_totalItems" CountLabel="hosts"
+                 OnSearch="ResetPage" />
 
-    <div class="table-responsive">
-        <table class="table table-hover table-sm">
-            <thead>
-                <tr>
-                    <th>Status</th>
-                    <th>Host</th>
-                    <th>Display Name</th>
-                    <th>Enabled</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var h in _pagedHosts)
-                {
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="ui-panel-header">
+            <span class="ui-panel-title">
+                <i class="bi bi-hdd-network text-accent"></i>
+                Monitored Hosts
+            </span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
                     <tr>
-                        <td>
-                            <span class="badge bg-@h.StatusBadge">
-                                <i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>@h.StatusLabel
-                            </span>
-                        </td>
-                        <td><code>@h.Host</code></td>
-                        <td>@h.Name</td>
-                        <td>
-                            @if (h.IsEnabled)
-                            { <i class="bi bi-check-circle text-success"></i> }
-                            else
-                            { <i class="bi bi-x-circle text-danger"></i> }
-                        </td>
-                        <td>
-                            <a href="/hosts/@h.HostId" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i> Detail
-                            </a>
-                        </td>
+                        <th>Status</th>
+                        <th>Host</th>
+                        <th>Display Name</th>
+                        <th class="text-center">Enabled</th>
+                        <th></th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @if (!_pagedHosts.Any())
+                    {
+                        <tr><td colspan="5" class="text-muted text-center py-4">No hosts found.</td></tr>
+                    }
+                    @foreach (var h in _pagedHosts)
+                    {
+                        <tr>
+                            <td>
+                                <span class="badge bg-@h.StatusBadge">
+                                    <i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>@h.StatusLabel
+                                </span>
+                            </td>
+                            <td><code class="small">@h.Host</code></td>
+                            <td>@h.Name</td>
+                            <td class="text-center">
+                                @if (h.IsEnabled)
+                                { <i class="bi bi-check-circle text-success"></i> }
+                                else
+                                { <i class="bi bi-x-circle text-danger"></i> }
+                            </td>
+                            <td>
+                                <a href="/hosts/@h.HostId" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Detail
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="px-3 py-2 border-top border-opacity-10">
+            <Paginator TotalItems="_totalItems" PageSize="PageSize" CurrentPage="_page"
+                       OnPageChanged="p => { _page = p; StateHasChanged(); }" />
+        </div>
     </div>
-
-    <Paginator TotalItems="_totalItems" PageSize="PageSize" CurrentPage="_page"
-               OnPageChanged="p => { _page = p; StateHasChanged(); }" />
 }
 
 @code {
@@ -111,18 +138,11 @@ else
     {
         _loading = true;
         try { _hosts = await Zabbix.GetHostsAsync(); }
-        catch (Exception ex) { Alerts.Error("Failed to load hosts", ex.Message); Toasts.ShowError("Chyba", $"Nepodařilo se načíst hosty: {ex.Message}"); }
+        catch (Exception ex) { Alerts.Error("Failed to load hosts", ex.Message); }
         finally { _loading = false; }
     }
 
-    private void OnFilterChanged(ChangeEventArgs e)
-    {
-        _filter = e.Value?.ToString() ?? "";
-        _page = 1;
-    }
+    private void ResetPage() => _page = 1;
 
-    public void Dispose()
-    {
-        _refreshTimer?.Dispose();
-    }
+    public void Dispose() => _refreshTimer?.Dispose();
 }
