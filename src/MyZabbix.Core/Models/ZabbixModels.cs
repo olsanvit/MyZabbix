@@ -210,6 +210,47 @@ public class ZabbixItem
         .FromUnixTimeSeconds(long.TryParse(LastClock, out var t) ? t : 0).LocalDateTime;
 }
 
+// ── Host Groups ───────────────────────────────────────────────────────────
+
+/// <summary>Represents a Zabbix host group as returned by the <c>hostgroup.get</c> API method.</summary>
+public class ZabbixHostGroup
+{
+    [JsonPropertyName("groupid")]  public string GroupId    { get; set; } = "";
+    [JsonPropertyName("name")]     public string Name       { get; set; } = "";
+    [JsonPropertyName("hosts")]    public List<ZabbixHostRef> Hosts { get; set; } = [];
+    [JsonIgnore] public int HostCount => Hosts.Count;
+}
+
+// ── Events / Alerts ───────────────────────────────────────────────────────
+
+/// <summary>Represents a resolved or historical Zabbix event as returned by <c>event.get</c>.</summary>
+public class ZabbixEvent
+{
+    [JsonPropertyName("eventid")]     public string EventId     { get; set; } = "";
+    [JsonPropertyName("name")]        public string Name        { get; set; } = "";
+    [JsonPropertyName("severity")]    public string Severity    { get; set; } = "0";
+    [JsonPropertyName("clock")]       public string Clock       { get; set; } = "0";
+    [JsonPropertyName("r_clock")]     public string RClock      { get; set; } = "0";
+    [JsonPropertyName("acknowledged")]public string Acknowledged{ get; set; } = "0";
+    [JsonPropertyName("hosts")]       public List<ZabbixHostRef> Hosts { get; set; } = [];
+
+    [JsonIgnore] public DateTime OccurredAt  => DateTimeOffset.FromUnixTimeSeconds(long.TryParse(Clock,  out var t) ? t : 0).LocalDateTime;
+    [JsonIgnore] public DateTime? ResolvedAt => RClock != "0" ? DateTimeOffset.FromUnixTimeSeconds(long.TryParse(RClock, out var t) ? t : 0).LocalDateTime : null;
+    [JsonIgnore] public bool IsAcknowledged  => Acknowledged == "1";
+    [JsonIgnore] public bool IsResolved      => RClock != "0";
+    [JsonIgnore] public string HostName      => Hosts.FirstOrDefault()?.Name ?? "";
+    [JsonIgnore] public string SeverityLabel => int.TryParse(Severity, out var s) ? s switch
+    {
+        0 => "Not classified", 1 => "Information", 2 => "Warning",
+        3 => "Average", 4 => "High", 5 => "Disaster", _ => "Unknown"
+    } : "Unknown";
+    [JsonIgnore] public string SeverityBadge => int.TryParse(Severity, out var s) ? s switch
+    {
+        0 => "secondary", 1 => "info", 2 => "warning",
+        3 => "warning",   4 => "danger", 5 => "danger", _ => "secondary"
+    } : "secondary";
+}
+
 // ── Dashboard stats ───────────────────────────────────────────────────────
 
 /// <summary>

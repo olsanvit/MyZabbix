@@ -1,0 +1,163 @@
+@page "/alerts"
+@implements IDisposable
+@inject ZabbixApiService Zabbix
+
+<PageTitle>Alerts History — MyZabbix</PageTitle>
+
+<div class="ui-page-header ui-anim-fade-up">
+    <h3><i class="bi bi-bell-fill"></i> Alerts History</h3>
+    <div class="d-flex gap-2">
+        <span class="text-muted small align-self-center">last 200 events</span>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+    </div>
+</div>
+
+@if (!Zabbix.IsAuthenticated)
+{
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="d-flex align-items-center gap-3 py-2">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+            <div>
+                <div class="fw-semibold">Not connected to Zabbix</div>
+                <div class="text-muted small">Go to <a href="/settings">Settings</a> and enter your Zabbix credentials.</div>
+            </div>
+        </div>
+    </div>
+}
+else if (_loading)
+{
+    <div class="ui-anim-fade-up d-flex align-items-center gap-2 mt-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span class="text-muted">Loading alerts…</span>
+    </div>
+}
+else
+{
+    <UiSearchBar @bind-Value="_filter" Placeholder="Filter alerts, hosts…"
+                 Count="_filtered.Count" CountLabel="events"
+                 OnSearch="() => { }">
+        <select class="form-select form-select-sm"
+                style="max-width:150px;background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:var(--ui-text-1)"
+                @bind="_minSeverity">
+            <option value="-1">All severities</option>
+            <option value="5">Disaster</option>
+            <option value="4">High+</option>
+            <option value="3">Average+</option>
+            <option value="2">Warning+</option>
+        </select>
+        <select class="form-select form-select-sm"
+                style="max-width:130px;background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:var(--ui-text-1)"
+                @bind="_statusFilter">
+            <option value="all">All states</option>
+            <option value="resolved">Resolved</option>
+            <option value="active">Active</option>
+        </select>
+    </UiSearchBar>
+
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="ui-panel-header">
+            <span class="ui-panel-title">
+                <i class="bi bi-bell text-accent"></i>
+                Event Log
+            </span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Severity</th>
+                        <th>Host</th>
+                        <th>Event</th>
+                        <th>Occurred</th>
+                        <th>Resolved</th>
+                        <th class="text-center">Ack</th>
+                        <th class="text-center">State</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!_filtered.Any())
+                    {
+                        <tr><td colspan="7" class="text-muted text-center py-4">No events found 🎉</td></tr>
+                    }
+                    @foreach (var e in _filtered)
+                    {
+                        <tr>
+                            <td>
+                                <span class="badge bg-@e.SeverityBadge">@e.SeverityLabel</span>
+                            </td>
+                            <td class="fw-semibold small">@e.HostName</td>
+                            <td class="small">@e.Name</td>
+                            <td class="text-muted small">@e.OccurredAt.ToString("dd.MM HH:mm")</td>
+                            <td class="text-muted small">
+                                @(e.ResolvedAt.HasValue ? e.ResolvedAt.Value.ToString("dd.MM HH:mm") : "—")
+                            </td>
+                            <td class="text-center">
+                                @if (e.IsAcknowledged)
+                                {
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-dash text-muted"></i>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (e.IsResolved)
+                                {
+                                    <span class="badge bg-success small">Resolved</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger small">Active</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private List<ZabbixEvent> _events = [];
+    private string _filter = "";
+    private int _minSeverity = -1;
+    private string _statusFilter = "all";
+    private Timer? _timer;
+
+    private List<ZabbixEvent> _filtered => _events
+        .Where(e =>
+            (string.IsNullOrWhiteSpace(_filter) ||
+             e.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase) ||
+             e.HostName.Contains(_filter, StringComparison.OrdinalIgnoreCase)) &&
+            (_minSeverity < 0 || int.TryParse(e.Severity, out var sv) && sv >= _minSeverity) &&
+            (_statusFilter == "all" ||
+             (_statusFilter == "resolved" && e.IsResolved) ||
+             (_statusFilter == "active" && !e.IsResolved)))
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _timer = new Timer(_ => InvokeAsync(LoadAsync), null,
+            TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+    }
+
+    private async Task LoadAsync()
+    {
+        if (!Zabbix.IsAuthenticated) { _loading = false; return; }
+        try
+        {
+            _loading = true;
+            _events = await Zabbix.GetEventsAsync(limit: 200);
+        }
+        catch { _events = []; }
+        finally { _loading = false; StateHasChanged(); }
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

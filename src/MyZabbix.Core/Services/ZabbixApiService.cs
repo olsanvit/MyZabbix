@@ -184,6 +184,41 @@ public class ZabbixApiService
         }) ?? [];
     }
 
+    // ── Host Groups ──────────────────────────────────────────────────────────
+
+    /// <summary>Retrieves all host groups from Zabbix, including their member hosts.</summary>
+    public async Task<List<ZabbixHostGroup>> GetHostGroupsAsync()
+    {
+        return await SendAsync<List<ZabbixHostGroup>>("hostgroup.get", new
+        {
+            output      = new[] { "groupid", "name" },
+            selectHosts = new[] { "hostid", "name" },
+            sortfield   = "name",
+            sortorder   = "ASC"
+        }) ?? [];
+    }
+
+    // ── Events / Alerts ───────────────────────────────────────────────────────
+
+    /// <summary>Retrieves historical problem events, most recent first, capped at <paramref name="limit"/> records.</summary>
+    public async Task<List<ZabbixEvent>> GetEventsAsync(int limit = 200, int? severityMin = null)
+    {
+        var @params = new Dictionary<string, object>
+        {
+            ["output"]      = "extend",
+            ["selectHosts"] = new[] { "hostid", "name" },
+            ["source"]      = 0,
+            ["object"]      = 0,
+            ["value"]       = 1,
+            ["sortfield"]   = new[] { "clock", "eventid" },
+            ["sortorder"]   = new[] { "DESC", "DESC" },
+            ["limit"]       = limit
+        };
+        if (severityMin.HasValue)
+            @params["severities"] = Enumerable.Range(severityMin.Value, 6 - severityMin.Value).ToArray();
+        return await SendAsync<List<ZabbixEvent>>("event.get", @params) ?? [];
+    }
+
     // ── Dashboard stats ───────────────────────────────────────────────────
 
     /// <summary>

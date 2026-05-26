@@ -1,0 +1,139 @@
+@page "/groups"
+@implements IDisposable
+@inject ZabbixApiService Zabbix
+
+<PageTitle>Host Groups — MyZabbix</PageTitle>
+
+<div class="ui-page-header ui-anim-fade-up">
+    <h3><i class="bi bi-diagram-3"></i> Host Groups</h3>
+    <button class="btn btn-sm btn-outline-secondary" @onclick="LoadAsync">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+</div>
+
+@if (!Zabbix.IsAuthenticated)
+{
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="d-flex align-items-center gap-3 py-2">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+            <div>
+                <div class="fw-semibold">Not connected to Zabbix</div>
+                <div class="text-muted small">Go to <a href="/settings">Settings</a> and enter your Zabbix credentials.</div>
+            </div>
+        </div>
+    </div>
+}
+else if (_loading)
+{
+    <div class="ui-anim-fade-up d-flex align-items-center gap-2 mt-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span class="text-muted">Loading host groups…</span>
+    </div>
+}
+else
+{
+    <UiSearchBar @bind-Value="_filter" Placeholder="Filter groups…"
+                 Count="_filtered.Count" CountLabel="groups"
+                 OnSearch="() => { }" />
+
+    <!-- Stats cards -->
+    <div class="row g-3 mb-3 ui-anim-fade-up">
+        <div class="col-6 col-lg-3">
+            <div class="ui-panel text-center p-3">
+                <div class="fw-bold fs-4 text-accent">@_groups.Count</div>
+                <div class="text-muted small">Host Groups</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="ui-panel text-center p-3">
+                <div class="fw-bold fs-4 text-accent">@_groups.Sum(g => g.HostCount)</div>
+                <div class="text-muted small">Total Host Assignments</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="ui-panel text-center p-3">
+                <div class="fw-bold fs-4 text-accent">@(_groups.Count > 0 ? _groups.Max(g => g.HostCount) : 0)</div>
+                <div class="text-muted small">Largest Group</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="ui-panel text-center p-3">
+                <div class="fw-bold fs-4 text-accent">@_groups.Count(g => g.HostCount == 0)</div>
+                <div class="text-muted small">Empty Groups</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ui-panel ui-anim-fade-up">
+        <div class="ui-panel-header">
+            <span class="ui-panel-title">
+                <i class="bi bi-diagram-3 text-accent"></i>
+                Skupiny hostů
+            </span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Group</th>
+                        <th class="text-center">Hosts</th>
+                        <th>Members (preview)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!_filtered.Any())
+                    {
+                        <tr><td colspan="3" class="text-muted text-center py-4">No host groups found.</td></tr>
+                    }
+                    @foreach (var g in _filtered)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@g.Name</td>
+                            <td class="text-center"><span class="badge bg-secondary">@g.HostCount</span></td>
+                            <td class="small text-muted">
+                                @(string.Join(", ", g.Hosts.Take(5).Select(h => h.Name)))
+                                @if (g.HostCount > 5)
+                                {
+                                    <span class="text-muted"> … +@(g.HostCount - 5) more</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private List<ZabbixHostGroup> _groups = [];
+    private string _filter = "";
+    private Timer? _timer;
+
+    private List<ZabbixHostGroup> _filtered => _groups
+        .Where(g => string.IsNullOrWhiteSpace(_filter) ||
+                    g.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _timer = new Timer(_ => InvokeAsync(LoadAsync), null,
+            TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+    }
+
+    private async Task LoadAsync()
+    {
+        if (!Zabbix.IsAuthenticated) { _loading = false; return; }
+        try
+        {
+            _loading = true;
+            _groups = await Zabbix.GetHostGroupsAsync();
+        }
+        catch { _groups = []; }
+        finally { _loading = false; StateHasChanged(); }
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}
