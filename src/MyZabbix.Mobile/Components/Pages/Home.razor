@@ -18,18 +18,30 @@ else if (_loading)
 else if (_stats is not null)
 {
     <div class="row g-2 mb-3">
-        <div class="col-6"><div class="card border-0 bg-primary text-white p-2 text-center">
-            <div class="fw-bold fs-4">@_stats.TotalHosts</div><small>Hosts</small>
-        </div></div>
-        <div class="col-6"><div class="card border-0 bg-danger text-white p-2 text-center">
-            <div class="fw-bold fs-4">@_stats.TotalProblems</div><small>Problems</small>
-        </div></div>
-        <div class="col-6"><div class="card border-0 bg-success text-white p-2 text-center">
-            <div class="fw-bold fs-4">@_stats.AvailableHosts</div><small>Available</small>
-        </div></div>
-        <div class="col-6"><div class="card border-0 bg-warning text-dark p-2 text-center">
-            <div class="fw-bold fs-4">@_stats.UnavailableHosts</div><small>Down</small>
-        </div></div>
+        <div class="col-6">
+            <div class="ui-panel text-center p-2">
+                <div class="fw-bold fs-4 text-accent">@_stats.TotalHosts</div>
+                <div class="text-muted small">Hosts</div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="ui-panel text-center p-2">
+                <div class="fw-bold fs-4 text-danger">@_stats.TotalProblems</div>
+                <div class="text-muted small">Problems</div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="ui-panel text-center p-2">
+                <div class="fw-bold fs-4 text-success">@_stats.AvailableHosts</div>
+                <div class="text-muted small">Available</div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="ui-panel text-center p-2">
+                <div class="fw-bold fs-4 text-warning">@_stats.UnavailableHosts</div>
+                <div class="text-muted small">Down</div>
+            </div>
+        </div>
     </div>
 
     @foreach (var p in _problems.Take(10))
