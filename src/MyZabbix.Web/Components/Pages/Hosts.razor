@@ -69,8 +69,8 @@ else
                                     <i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>@h.StatusLabel
                                 </span>
                             </td>
-                            <td><code class="small">@h.Host</code></td>
-                            <td>@h.Name</td>
+                            <td><a href="/hosts/@h.HostId" class="text-decoration-none"><code class="small">@h.Host</code></a></td>
+                            <td><a href="/hosts/@h.HostId" class="text-decoration-none">@h.Name</a></td>
                             <td class="text-center">
                                 @if (h.IsEnabled)
                                 { <i class="bi bi-check-circle text-success"></i> }
