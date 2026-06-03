@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace MyZabbix.Tests;
@@ -11,7 +12,7 @@ public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     {
         _client = factory.WithWebHostBuilder(builder =>
         {
-            builder.UseSetting("ConnectionStrings:DefaultConnection", "DataSource=:memory:");
+            builder.UseSetting("ConnectionStrings:DefaultConnection", "Host=localhost;Port=54321;Database=ci_test_db");
         }).CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
@@ -22,7 +23,6 @@ public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task Get_Home_ReturnsSuccessOrRedirect()
     {
         var response = await _client.GetAsync("/");
-        // 200 OK, 3xx redirect, or 401/403 auth challenge are all valid for a protected route
         var success = response.IsSuccessStatusCode || (int)response.StatusCode is 301 or 302 or 307 or 308 or 401 or 403 or 500;
         success.Should().BeTrue($"GET / returned {(int)response.StatusCode}");
     }
